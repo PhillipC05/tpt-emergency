@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  tpt-emergency:
+    build: .
+    container_name: tpt-emergency
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why Offline-First Saves Lives in Emergency Response — TPT Emergency</title>
+  <meta name="description" content="Cloud-dependent emergency software fails when networks go down. Learn why TPT Emergency's offline-first architecture with SQLite, IndexedDB, and service workers is built for disasters.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#dc2626', dark: '#991b1b', light: '#ef4444' },
+            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-text {
+      background: linear-gradient(135deg, #dc2626 0%, #f87171 50%, #fca5a5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .prose p { margin-bottom: 1.25rem; line-height: 1.75; color: #9ca3af; }
+    .prose h2 { color: white; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; }
+    .prose h3 { color: #e5e7eb; font-weight: 600; font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.75rem; }
+    .prose ul { margin-bottom: 1.25rem; padding-left: 1.5rem; }
+    .prose li { margin-bottom: 0.5rem; color: #9ca3af; }
+    .prose strong { color: #e5e7eb; }
+    .prose code { background: #1f2937; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; color: #fca5a5; }
+  </style>
+</head>
+<body class="bg-dark-900 text-white overflow-x-hidden">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full z-50 bg-dark-900/80 backdrop-blur-md border-b border-dark-700/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="landing.html" class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-brand flex items-center justify-center text-white font-bold text-lg">E</div>
+          <span class="font-bold text-xl">TPT Emergency</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="landing.html#features" class="text-gray-300 hover:text-white transition">Features</a>
+          <a href="landing.html#modules" class="text-gray-300 hover:text-white transition">Modules</a>
+          <a href="landing.html#deployment" class="text-gray-300 hover:text-white transition">Deploy</a>
+          <a href="pillar-offline-first.html" class="text-white font-medium border-b-2 border-brand">Offline-First</a>
+          <a href="pillar-modular-dispatch.html" class="text-gray-300 hover:text-white transition">Modular Dispatch</a>
+          <a href="https://github.com/TPT-Open-Source/tpt-emergency" target="_blank" class="px-4 py-2 bg-brand hover:bg-brand-light rounded-lg transition font-medium">GitHub</a>
+        </div>
+        <button id="mobile-menu-btn" class="md:hidden text-gray-300">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    <div id="mobile-menu" class="hidden md:hidden bg-dark-800 border-t border-dark-700">
+      <div class="px-4 py-3 space-y-2">
+        <a href="landing.html" class="block py-2 text-gray-300">Home</a>
+        <a href="pillar-offline-first.html" class="block py-2 text-white font-medium">Offline-First</a>
+        <a href="pillar-modular-dispatch.html" class="block py-2 text-gray-300">Modular Dispatch</a>
+      </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-20 lg:pt-40 lg:pb-28">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand-light text-sm font-medium mb-6">
+        Deep Dive
+      </div>
+      <h1 class="text-4xl lg:text-6xl font-extrabold leading-tight mb-6">
+        Why Offline-First<br>
+        <span class="gradient-text">Saves Lives</span>
+      </h1>
+      <p class="text-xl text-gray-400 leading-relaxed max-w-2xl">
+        When disaster strikes, networks fail. Cell towers collapse. Fiber lines sever. The cloud becomes unreachable. Your emergency software shouldn't depend on the very infrastructure the emergency just destroyed.
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="pb-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="prose max-w-none">
+
+        <h2>The Problem: Cloud Dependency in Emergencies</h2>
+        <p>
+          Most modern software assumes constant internet connectivity. In normal conditions, this is fine. But emergencies are, by definition, abnormal conditions. Consider these real-world scenarios:
+        </p>
+        <ul>
+          <li><strong>Hurricane landfall</strong> — Cell towers knocked offline for days. First responders lose access to dispatch systems that require cloud connectivity.</li>
+          <li><strong>Rural ambulance call</strong> — No cell coverage in remote areas. Patient data, protocols, and routing unavailable when seconds count.</li>
+          <li><strong>Tunnel/underground fire</strong> — No radio, no cellular, no WiFi. Incident commanders working blind without local incident records.</li>
+          <li><strong>Concert crowd collapse</strong> — Network overloaded by thousands of phones. Hospital diversion status, bed counts, and transport tracking unreachable.</li>
+          <li><strong>Cyberattack on municipal infrastructure</strong> — Internet deliberately severed. Cloud-hosted CAD systems completely inaccessible.</li>
+        </ul>
+
+        <h2>The TPT Emergency Architecture</h2>
+        <p>
+          TPT Emergency is designed with a <strong>dual-storage, zero-external-dependency</strong> architecture. Every feature works locally. Every piece of data is stored on-device. Network connectivity is treated as a nice-to-have, not a requirement.
+        </p>
+
+        <h3>SQLite + IndexedDB: The Dual-Storage Strategy</h3>
+        <p>
+          The backend uses <strong>SQLite</strong> as the primary database. It's a single file, zero-configuration, serverless database that stores every incident, unit, resource, audit log, and configuration setting. The entire database is contained in one file that can be backed up, copied, exported to USB, or transferred between systems.
+        </p>
+        <p>
+          The frontend uses <strong>IndexedDB</strong> via <code>Dexie.js</code> as a client-side cache. When the app loads, it pulls data from the server into IndexedDB. If the connection drops, the app continues operating from the local cache. When connectivity returns, a background sync engine reconciles changes.
+        </p>
+
+        <h3>Service Workers & Workbox: True PWA Offline Support</h3>
+        <p>
+          TPT Emergency is built as a Progressive Web App (PWA). <strong>Workbox</strong> generates a service worker that precaches the application shell and runtime caches for dynamic content. Once installed, the app opens instantly — even with no network at all.
+        </p>
+        <p>
+          The service worker handles:
+        </p>
+        <ul>
+          <li>Application shell caching (HTML, JS, CSS assets)</li>
+          <li>Runtime API response caching with stale-while-revalidate strategy</li>
+          <li>Background sync queues for POST/PUT requests made while offline</li>
+          <li>Fallback to cached content when the server is unreachable</li>
+        </ul>
+
+        <h3>Background Sync Engine & Conflict Resolution</h3>
+        <p>
+          When a user creates or updates data while offline, the change is stored in an <strong>outbox queue</strong>. The service worker's background sync API attempts to send queued changes when connectivity returns. If multiple devices made conflicting changes, a <strong>last-write-wins</strong> conflict resolution strategy applies, with full audit logging so nothing is silently overwritten.
+        </p>
+
+        <h3>Map Tile Offline Caching</h3>
+        <p>
+          Mapping is critical for emergency response. TPT Emergency uses <strong>MapLibre GL JS</strong> with a custom tile cache. Map tiles are downloaded on first view and stored locally. The system pre-caches tiles for operational areas so maps render instantly even without connectivity. Search & rescue patterns, hazard zones, and unit positions all display on fully offline maps.
+        </p>
+
+        <div class="my-12 p-8 rounded-2xl bg-dark-800 border border-dark-700">
+          <h3 class="text-lg font-semibold text-white mb-4">Technical Stack at a Glance</h3>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-mono text-sm font-bold">DB</div>
+              <div>
+                <div class="font-medium text-sm">SQLite</div>
+                <div class="text-xs text-gray-500">Single-file, serverless, zero config</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-mono text-sm font-bold">IDB</div>
+              <div>
+                <div class="font-medium text-sm">IndexedDB + Dexie</div>
+                <div class="text-xs text-gray-500">Browser-native client cache</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400 font-mono text-sm font-bold">SW</div>
+              <div>
+                <div class="font-medium text-sm">Workbox PWA</div>
+                <div class="text-xs text-gray-500">Service worker with background sync</div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 font-mono text-sm font-bold">Map</div>
+              <div>
+                <div class="font-medium text-sm">MapLibre GL JS</div>
+                <div class="text-xs text-gray-500">Open-source, offline tile caching</div>
+            </div>
+        </div>
+
+        <h2>Real-World Scenarios</h2>
+
+        <h3>Scenario 1: Hurricane Response</h3>
+        <p>
+          A Category 4 hurricane makes landfall. Cell towers are down across three counties. The Emergency Operations Center loses internet. TPT Emergency, running on a local laptop with the SQLite database, continues to receive incident reports via local WiFi mesh. Dispatchers assign units, track resources, and log all activity. When a satellite uplink is established 6 hours later, all queued data syncs to the central server. Nothing is lost.
+        </p>
+
+        <h3>Scenario 2: Rural Ambulance Transport</h3>
+        <p>
+          An ambulance is dispatched to a remote mountain road — no cell coverage for 40 minutes. The paramedic opens TPT Emergency on a tablet. All protocols, hospital diversion statuses, and patient forms are cached locally. They document the patient encounter, record vitals from a Bluetooth-enabled monitor, and enter transport details. When the ambulance returns to coverage, everything syncs automatically to dispatch and the receiving hospital.
+        </p>
+
+        <h3>Scenario 3: Tunnel Fire Incident Command</h3>
+        <p>
+          A vehicle fire in a major tunnel cuts all communications. The incident commander, stationed at the tunnel mouth, runs TPT Emergency on a ruggedized laptop. Bluetooth beacons on each responder's gear report their position as they move through the tunnel. The IC sees unit locations on an offline map, manages the accountability roster, and logs PAR checks. No internet required.
+        </p>
+
+        <h2>Comparison: TPT Emergency vs. Cloud-Dependent Systems</h2>
+
+        <div class="overflow-x-auto my-8">
+          <table class="w-full text-sm text-left">
+            <thead class="text-xs text-gray-400 uppercase bg-dark-800">
+              <tr>
+                <th class="px-4 py-3 rounded-tl-lg">Capability</th>
+                <th class="px-4 py-3 text-green-400">TPT Emergency</th>
+                <th class="px-4 py-3 text-red-400 rounded-tr-lg">Cloud-Dependent CAD</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-700">
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white">No internet required</td>
+                <td class="px-4 py-3 text-green-400">✅ Full functionality</td>
+                <td class="px-4 py-3 text-red-400">❌ Completely unusable</td>
+              </tr>
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white">Data storage</td>
+                <td class="px-4 py-3 text-green-400">✅ Local SQLite file</td>
+                <td class="px-4 py-3 text-red-400">❌ Remote cloud database</td>
+              </tr>
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white">Map rendering</td>
+                <td class="px-4 py-3 text-green-400">✅ Offline tile cache</td>
+                <td class="px-4 py-3 text-red-400">❌ Requires map API calls</td>
+              </tr>
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white">Data ownership</td>
+                <td class="px-4 py-3 text-green-400">✅ You own everything</td>
+                <td class="px-4 py-3 text-red-400">❌ Vendor holds your data</td>
+              </tr>
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white">Export / portability</td>
+                <td class="px-4 py-3 text-green-400">✅ Single file, USB, email</td>
+                <td class="px-4 py-3 text-red-400">❌ API-dependent extraction</td>
+              </tr>
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white">Black-start recovery</td>
+                <td class="px-4 py-3 text-green-400">✅ Boot from USB, instant</td>
+                <td class="px-4 py-3 text-red-400">❌ Wait for cloud restoration</td>
+              </tr>
+              <tr class="bg-dark-800/50">
+                <td class="px-4 py-3 font-medium text-white rounded-bl-lg">Subscription cost</td>
+                <td class="px-4 py-3 text-green-400">✅ Free, open source</td>
+                <td class="px-4 py-3 text-red-400 rounded-br-lg">❌ $10k–$100k+/year</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Security & Trust Signals</h2>
+        <p>
+          <strong>Zero external connections.</strong> TPT Emergency makes no calls to third-party APIs, analytics services, or cloud platforms. All data stays within your network. This is not a feature — it's a core design principle.
+        </p>
+        <p>
+          <strong>No session timeouts.</strong> Emergency dispatchers cannot afford to be logged out during a multi-hour incident. TPT Emergency disables all automatic session timeouts.
+        </p>
+        <p>
+          <strong>Black-start recovery.</strong> If every system fails, you can boot from a USB drive containing the static HTML build and the SQLite database file. The system is operational in under 30 seconds with zero infrastructure.
+        </p>
+        <p>
+          <strong>Encrypted export.</strong> All data can be exported to an encrypted file for offline backup or transfer. Import it on any other TPT Emergency instance and resume operations immediately.
+        </p>
+
+        <h2>Get Started</h2>
+        <p>
+          TPT Emergency's offline-first architecture isn't a fallback — it's the default. Install it, disconnect from the internet, and watch everything still work. That's the point.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mt-8">
+          <a href="https://github.com/TPT-Open-Source/tpt-emergency" target="_blank" class="px-6 py-3 bg-brand hover:bg-brand-light rounded-xl font-semibold text-white transition">
+            Download on GitHub
+          </a>
+          <a href="pillar-modular-dispatch.html" class="px-6 py-3 bg-dark-700 hover:bg-dark-600 rounded-xl font-semibold text-white transition border border-dark-700">
+            Next: Modular Dispatch →
+          </a>
+        </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-dark-700/50 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-bold">E</div>
+          <span class="font-bold">TPT Emergency</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm text-gray-400">
+          <a href="landing.html" class="hover:text-white transition">Home</a>
+          <a href="pillar-offline-first.html" class="text-white">Offline-First</a>
+          <a href="pillar-modular-dispatch.html" class="hover:text-white transition">Modular Dispatch</a>
+          <a href="https://github.com/TPT-Open-Source/tpt-emergency" target="_blank" class="hover:text-white transition">GitHub</a>
+        </div>
+      <div class="text-center text-sm text-gray-500 mt-8">
+        © TPT Emergency Services. Open source under MIT License.
+      </div>
+  </footer>
+
+  <script>
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.toggle('hidden');
+    });
+  </script>
+</body>
+</html>

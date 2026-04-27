@@ -1,0 +1,20 @@
+[Unit]
+Description=TPT Emergency Services System
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/tpt-emergency
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+RestartSec=5
+StandardOutput=journal+console
+StandardError=journal+console
+SyslogIdentifier=tpt-emergency
+
+[Install]
+WantedBy=multi-user.target

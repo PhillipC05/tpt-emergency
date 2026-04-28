@@ -25,7 +25,7 @@
 
 ### ✅ Run in 3 commands:
 ```bash
-git clone <repository>
+git clone https://github.com/PhillipC05/tpt-emergency.git
 cd tpt-emergency
 npm install
 npm run dev

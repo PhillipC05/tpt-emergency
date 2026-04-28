@@ -14,7 +14,7 @@
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/TPT-Open-Source/tpt-emergency.git
+git clone https://github.com/PhillipC05/tpt-emergency.git
 cd tpt-emergency
 ```
 

@@ -28,7 +28,7 @@ Just run the executable, system will automatically start and open browser.
 Works on all operating systems with Node.js 18+ installed:
 
 ```bash
-git clone <repository>
+git clone https://github.com/PhillipC05/tpt-emergency.git
 cd tpt-emergency
 npm install --production
 npm run build
@@ -88,7 +88,7 @@ Raspberry Pi OS (Bookworm 64-bit):
 sudo apt update && sudo apt install -y nodejs npm git
 
 # Install application
-git clone <repository>
+git clone https://github.com/PhillipC05/tpt-emergency.git
 cd tpt-emergency
 npm install
 npm run build:exe
@@ -123,10 +123,10 @@ docker-compose up -d
 
 | Provider | Button |
 |---|---|
-| DigitalOcean | [Deploy to DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=<repository>) |
-| Render | [Deploy to Render](https://render.com/deploy?repo=<repository>) |
+| DigitalOcean | [Deploy to DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/PhillipC05/tpt-emergency.git) |
+| Render | [Deploy to Render](https://render.com/deploy?repo=https://github.com/PhillipC05/tpt-emergency.git) |
 | Fly.io | [Deploy to Fly.io](https://fly.io/deploy) |
-| Vercel | [Deploy to Vercel](https://vercel.com/new/clone?repository-url=<repository>) |
+| Vercel | [Deploy to Vercel](https://vercel.com/new/clone?repository-url=https://github.com/PhillipC05/tpt-emergency.git) |
 
 ---
 

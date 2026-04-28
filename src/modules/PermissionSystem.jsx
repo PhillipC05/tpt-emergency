@@ -4,15 +4,102 @@
  * Role-based access control, permissions matrix and security management
  */
 
-import { createSignal, onMount, For } from 'solid-js'
+import { createSignal, onMount, For, Show } from 'solid-js'
+
+const ROLE_OPTIONS = [
+  { value: 'ADMINISTRATOR',   label: 'System Administrator', color: 'bg-red-700' },
+  { value: 'DISPATCHER',      label: 'Emergency Dispatcher',  color: 'bg-blue-700' },
+  { value: 'FIELD_COMMANDER', label: 'Field Commander',       color: 'bg-orange-700' },
+  { value: 'FIRST_RESPONDER', label: 'First Responder',       color: 'bg-green-700' },
+  { value: 'OBSERVER',        label: 'Observer',              color: 'bg-gray-600' }
+]
+const roleColor = (role) => ROLE_OPTIONS.find(r => r.value === role)?.color || 'bg-gray-600'
+const roleLabel = (role) => ROLE_OPTIONS.find(r => r.value === role)?.label || role
+
+const emptyForm = () => ({ username: '', displayName: '', password: '', role: 'FIRST_RESPONDER' })
 
 export function PermissionSystem() {
-  const [activeTab, setActiveTab] = createSignal('roles')
+  const [activeTab, setActiveTab] = createSignal('users')
   const [roles, setRoles] = createSignal([])
   const [users, setUsers] = createSignal([])
   const [permissions, setPermissions] = createSignal([])
   const [selectedRole, setSelectedRole] = createSignal(null)
-  const [selectedUser, setSelectedUser] = createSignal(null)
+
+  // User CRUD state
+  const [showModal, setShowModal] = createSignal(false)
+  const [editingUser, setEditingUser] = createSignal(null)
+  const [form, setForm] = createSignal(emptyForm())
+  const [formError, setFormError] = createSignal('')
+  const [saving, setSaving] = createSignal(false)
+  const [deleteConfirm, setDeleteConfirm] = createSignal(null)
+
+  const loadUsers = async () => {
+    const res = await fetch('/api/users')
+    if (res.ok) setUsers(await res.json())
+  }
+
+  const openCreate = () => {
+    setEditingUser(null)
+    setForm(emptyForm())
+    setFormError('')
+    setShowModal(true)
+  }
+
+  const openEdit = (user) => {
+    setEditingUser(user)
+    setForm({ username: user.username, displayName: user.display_name || '', password: '', role: user.role })
+    setFormError('')
+    setShowModal(true)
+  }
+
+  const saveUser = async () => {
+    const f = form()
+    if (!f.username.trim()) return setFormError('Username is required')
+    if (!editingUser() && !f.password.trim()) return setFormError('Password is required for new users')
+    setSaving(true)
+    setFormError('')
+    try {
+      let res
+      if (editingUser()) {
+        const body = { displayName: f.displayName, role: f.role }
+        if (f.password.trim()) body.password = f.password
+        res = await fetch(`/api/users/${editingUser().id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        })
+      } else {
+        res = await fetch('/api/users', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: f.username.trim(), displayName: f.displayName || f.username, password: f.password, role: f.role })
+        })
+      }
+      const data = await res.json()
+      if (!res.ok) { setFormError(data.error || 'Save failed'); return }
+      await loadUsers()
+      setShowModal(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const toggleStatus = async (user) => {
+    const newStatus = user.status === 'active' ? 'inactive' : 'active'
+    await fetch(`/api/users/${user.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    })
+    await loadUsers()
+  }
+
+  const deleteUser = async (id) => {
+    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const d = await res.json()
+      alert(d.error)
+      return
+    }
+    setDeleteConfirm(null)
+    await loadUsers()
+  }
 
   const generateMockData = () => {
     const permissionList = [
@@ -142,6 +229,7 @@ export function PermissionSystem() {
 
   onMount(() => {
     generateMockData()
+    loadUsers()
   })
 
   return (
@@ -210,29 +298,150 @@ export function PermissionSystem() {
 
       {activeTab() === 'users' && (
         <div class="flex-1 overflow-auto">
+          <div class="flex justify-between items-center mb-3">
+            <div class="text-sm text-gray-400">{users().length} user{users().length !== 1 ? 's' : ''}</div>
+            <button onClick={openCreate} class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition">
+              + Add User
+            </button>
+          </div>
+
           <div class="space-y-2">
             <For each={users()}>
-              {user => {
-                const role = getRoleById(user.role)
-                return (
-                  <div class={`bg-gray-800 rounded-lg p-4 ${selectedUser() === user.id ? 'border border-blue-500' : ''}`} onClick={() => setSelectedUser(user.id)}>
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-3">
-                        <span class={`w-2 h-2 rounded-full ${user.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}`} />
-                        <div>
-                          <div class="font-medium">{user.name}</div>
-                          <div class="text-xs text-gray-400">@{user.username}</div>
-                        </div>
-                      </div>
-                      <span class={`px-2 py-0.5 rounded text-xs ${role?.color || 'bg-gray-600'}`}>
-                        {role?.name || user.role}
-                      </span>
+              {user => (
+                <div class="bg-gray-800 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class={`w-8 h-8 rounded-full ${roleColor(user.role)} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
+                      {(user.display_name || user.username)[0].toUpperCase()}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="font-medium truncate">{user.display_name || user.username}</div>
+                      <div class="text-xs text-gray-400">@{user.username}</div>
                     </div>
                   </div>
-                )
-              }}
+
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class={`px-2 py-0.5 rounded text-xs ${roleColor(user.role)}`}>{roleLabel(user.role)}</span>
+
+                    <button
+                      onClick={() => toggleStatus(user)}
+                      class={`px-2 py-0.5 rounded text-xs transition ${user.status === 'active' ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-600 hover:bg-gray-500'}`}
+                      title="Toggle active/inactive"
+                    >
+                      {user.status === 'active' ? 'Active' : 'Inactive'}
+                    </button>
+
+                    <button onClick={() => openEdit(user)} class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs transition">
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(user)}
+                      disabled={user.username === 'admin'}
+                      class="px-2 py-1 bg-red-800 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed rounded text-xs transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
             </For>
           </div>
+
+          {/* Create / Edit Modal */}
+          <Show when={showModal()}>
+            <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
+              <div class="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700 space-y-4" onClick={e => e.stopPropagation()}>
+                <h3 class="text-lg font-bold">{editingUser() ? 'Edit User' : 'Add User'}</h3>
+
+                <Show when={!editingUser()}>
+                  <div>
+                    <label class="text-xs text-gray-400 mb-1 block">Username *</label>
+                    <input
+                      type="text"
+                      value={form().username}
+                      onInput={e => setForm(f => ({ ...f, username: e.target.value }))}
+                      class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
+                      placeholder="e.g. jsmith"
+                    />
+                  </div>
+                </Show>
+
+                <div>
+                  <label class="text-xs text-gray-400 mb-1 block">Display Name</label>
+                  <input
+                    type="text"
+                    value={form().displayName}
+                    onInput={e => setForm(f => ({ ...f, displayName: e.target.value }))}
+                    class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
+                    placeholder="e.g. John Smith"
+                  />
+                </div>
+
+                <div>
+                  <label class="text-xs text-gray-400 mb-1 block">
+                    {editingUser() ? 'New Password (leave blank to keep current)' : 'Password *'}
+                  </label>
+                  <input
+                    type="password"
+                    value={form().password}
+                    onInput={e => setForm(f => ({ ...f, password: e.target.value }))}
+                    class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
+                    placeholder={editingUser() ? 'Leave blank to keep unchanged' : 'Password'}
+                  />
+                </div>
+
+                <div>
+                  <label class="text-xs text-gray-400 mb-1 block">Role *</label>
+                  <select
+                    value={form().role}
+                    onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                    class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
+                  >
+                    <For each={ROLE_OPTIONS}>
+                      {r => <option value={r.value}>{r.label}</option>}
+                    </For>
+                  </select>
+                </div>
+
+                <Show when={formError()}>
+                  <div class="text-sm text-red-400">{formError()}</div>
+                </Show>
+
+                <div class="flex gap-2 pt-1">
+                  <button
+                    onClick={saveUser}
+                    disabled={saving()}
+                    class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded font-medium transition"
+                  >
+                    {saving() ? 'Saving…' : editingUser() ? 'Save Changes' : 'Create User'}
+                  </button>
+                  <button onClick={() => setShowModal(false)} class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded transition">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
+
+          {/* Delete Confirmation */}
+          <Show when={deleteConfirm()}>
+            <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div class="bg-gray-800 rounded-lg p-6 w-80 border border-red-800 space-y-4">
+                <h3 class="text-lg font-bold text-red-400">Delete User?</h3>
+                <p class="text-sm text-gray-300">
+                  This will permanently delete <span class="font-bold">{deleteConfirm()?.display_name || deleteConfirm()?.username}</span>.
+                  This cannot be undone.
+                </p>
+                <div class="flex gap-2">
+                  <button onClick={() => deleteUser(deleteConfirm().id)} class="flex-1 py-2 bg-red-700 hover:bg-red-600 rounded font-medium transition">
+                    Delete
+                  </button>
+                  <button onClick={() => setDeleteConfirm(null)} class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded transition">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
         </div>
       )}
 

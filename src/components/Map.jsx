@@ -2,6 +2,7 @@ import { createSignal, onMount, onCleanup } from 'solid-js'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css'
+import { geocoder } from '../lib/geocoder'
 
 export function Map() {
   let mapContainer
@@ -9,12 +10,35 @@ export function Map() {
 
   onMount(async () => {
     const MaplibreGeocoder = (await import('@maplibre/maplibre-gl-geocoder')).default
-    
+
     const mapInstance = new maplibregl.Map({
       container: mapContainer,
-      style: 'https://demotiles.maplibre.org/style.json',
+      style: {
+        version: 8,
+        sources: {
+          'osm': {
+            type: 'raster',
+            tiles: [
+              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors'
+          }
+        },
+        layers: [
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+            minzoom: 0,
+            maxzoom: 19
+          }
+        ]
+      },
       center: [174.885971, -40.900557],
-      zoom: 10,
+      zoom: 12,
       attributionControl: true
     })
 
@@ -23,13 +47,10 @@ export function Map() {
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true
     }), 'top-right')
-    
-    mapInstance.addControl(new MaplibreGeocoder({
-      api: 'nominatim',
-      limit: 5,
-      placeholder: 'Search address...',
-      country: 'nz',
-      maplibregl: maplibregl
+
+    mapInstance.addControl(new MaplibreGeocoder(geocoder.getMaplibreAdapter(), {
+      maplibregl,
+      placeholder: 'Search address... (works offline)'
     }), 'top-left')
 
     mapInstance.on('load', () => {

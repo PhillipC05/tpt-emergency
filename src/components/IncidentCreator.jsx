@@ -1,5 +1,6 @@
 /* d:\Programming\2 WIP\TPT Open Source\tpt-emergency\src\components\IncidentCreator.jsx */
 import { createSignal, createEffect, onMount } from 'solid-js'
+import { geocoder } from '../lib/geocoder'
 
 export function IncidentCreator(props) {
   const [formData, setFormData] = createSignal({
@@ -13,8 +14,7 @@ export function IncidentCreator(props) {
   })
   const [addressSuggestions, setAddressSuggestions] = createSignal([])
   const [showSuggestions, setShowSuggestions] = createSignal(false)
-  const [geocoderAvailable, setGeocoderAvailable] = createSignal(false)
-  let geocoder = null
+  const [isSearching, setIsSearching] = createSignal(false)
 
   const incidentTypes = [
     { id: 'fire', name: 'Fire', icon: '🔥', color: 'bg-orange-600' },
@@ -33,7 +33,7 @@ export function IncidentCreator(props) {
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
+      navigator.geolocation.getCurrentPosition(async (position) => {
         setFormData({
           ...formData(),
           latitude: position.coords.latitude,
@@ -41,54 +41,44 @@ export function IncidentCreator(props) {
         })
 
         // Reverse geocode coordinates to address
-        if (geocoder) {
-          geocoder.geocode({ location: { lat: position.coords.latitude, lng: position.coords.longitude } }, (results, status) => {
-            if (status === 'OK' && results[0]) {
-              setFormData({
-                ...formData(),
-                address: results[0].formatted_address
-              })
-            }
-          })
-        }
+        const address = await geocoder.reverseGeocode(position.coords.latitude, position.coords.longitude)
+        setFormData({
+          ...formData(),
+          address
+        })
       })
     }
   }
 
-  const searchAddress = (query) => {
-    if (!geocoder || query.length < 3) {
+  const searchAddress = async (query) => {
+    if (query.length < 3) {
       setAddressSuggestions([])
       setShowSuggestions(false)
       return
     }
 
-    geocoder.geocode({ address: query }, (results, status) => {
-      if (status === 'OK') {
-        setAddressSuggestions(results.slice(0, 5))
-        setShowSuggestions(true)
-      }
-    })
+    setIsSearching(true)
+    try {
+      const results = await geocoder.forwardGeocode(query, 5)
+      setAddressSuggestions(results)
+      setShowSuggestions(results.length > 0)
+    } finally {
+      setIsSearching(false)
+    }
   }
 
   const selectAddress = (result) => {
     setFormData({
       ...formData(),
-      address: result.formatted_address,
-      latitude: result.geometry.location.lat(),
-      longitude: result.geometry.location.lng()
+      address: result.place_name,
+      latitude: result.center[1],
+      longitude: result.center[0]
     })
     setShowSuggestions(false)
   }
 
   onMount(() => {
-    // Check if Google Maps Geocoder is available
-    if (window.google && window.google.maps) {
-      geocoder = new window.google.maps.Geocoder()
-      setGeocoderAvailable(true)
-      console.log('✅ Address geocoding available')
-    } else {
-      console.log('⚠️  Address geocoding not available, fallback to manual entry')
-    }
+    console.log('✅ Unified offline-first geocoding service active')
   })
 
   const submit = async (e) => {
@@ -160,19 +150,19 @@ export function IncidentCreator(props) {
            <label class="block text-sm text-gray-400 mb-2">Location Address</label>
            <div class="relative">
              <div class="flex gap-2">
-               <input
-                 type="text"
-                 value={formData().address}
-                 onInput={(e) => {
-                   setFormData({ ...formData(), address: e.target.value })
-                   searchAddress(e.target.value)
-                 }}
-                 onFocus={() => formData().address.length >=3 && setShowSuggestions(true)}
-                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                 class="flex-1 bg-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder={`Enter incident location address ${geocoderAvailable() ? '(autocomplete available)' : ''}`}
-                 required
-               />
+                <input
+                  type="text"
+                  value={formData().address}
+                  onInput={(e) => {
+                    setFormData({ ...formData(), address: e.target.value })
+                    searchAddress(e.target.value)
+                  }}
+                  onFocus={() => formData().address.length >=3 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  class="flex-1 bg-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={`Enter incident location address ${isSearching() ? '(searching...)' : '(autocomplete available - works offline)'}`}
+                  required
+                />
                <button
                  type="button"
                  onClick={getCurrentLocation}
@@ -185,15 +175,15 @@ export function IncidentCreator(props) {
 
              {showSuggestions() && addressSuggestions().length > 0 && (
                <div class="absolute top-full left-0 right-0 mt-1 bg-gray-700 rounded-lg z-10 overflow-hidden shadow-xl border border-gray-600">
-                 {addressSuggestions().map(suggestion => (
-                   <button
-                     type="button"
-                     onMouseDown={() => selectAddress(suggestion)}
-                     class="w-full text-left p-3 hover:bg-gray-600 transition text-sm border-b border-gray-600 last:border-0"
-                   >
-                     📍 {suggestion.formatted_address}
-                   </button>
-                 ))}
+                  {addressSuggestions().map(suggestion => (
+                    <button
+                      type="button"
+                      onMouseDown={() => selectAddress(suggestion)}
+                      class="w-full text-left p-3 hover:bg-gray-600 transition text-sm border-b border-gray-600 last:border-0"
+                    >
+                      📍 {suggestion.place_name}
+                    </button>
+                  ))}
                </div>
              )}
            </div>

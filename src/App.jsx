@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onMount, For } from 'solid-js'
+import { createSignal, createEffect, onMount, For, Show } from 'solid-js'
 import { Map } from './components/Map'
 import { BluetoothManager } from './components/BluetoothManager'
 import { ModuleLoader } from './modules/ModuleLoader'
@@ -9,16 +9,128 @@ import { AlarmReceiver } from './components/AlarmReceiver'
 import { NetworkHealth } from './components/NetworkHealth'
 import { GlobalUndo } from './components/GlobalUndo'
 import { VehicleMode } from './components/VehicleMode'
+import { DataManagement } from './components/DataManagement'
 import { initNightMode, toggleNightMode, isNightMode } from './lib/night-mode'
 import { OfflineDB } from './lib/offline-db'
 import { DispatchProvider } from './modules/CommonDispatchLayer'
 import { ResourceProvider } from './modules/ResourceTracking'
 import { TriageProvider } from './modules/TriageManagement'
-import { UserProvider } from './modules/UserRoleSystem'
+import { UserProvider, useUser } from './modules/UserRoleSystem'
 import { AuditLogProvider } from './modules/AuditLogSystem'
 import BeaconProvider from './modules/BeaconMonitoring'
 import SARProvider from './modules/SearchAndRescue'
 import ReportingProvider from './modules/IncidentReporting'
+
+function UserProfile() {
+  const user = useUser()
+  const [showLogin, setShowLogin] = createSignal(false)
+  const [username, setUsername] = createSignal('')
+  const [password, setPassword] = createSignal('')
+  const [error, setError] = createSignal('')
+  const [showMenu, setShowMenu] = createSignal(false)
+
+  const roleColors = {
+    ADMINISTRATOR: 'bg-red-700',
+    DISPATCHER: 'bg-blue-700',
+    FIELD_COMMANDER: 'bg-orange-700',
+    FIRST_RESPONDER: 'bg-green-700',
+    OBSERVER: 'bg-gray-600'
+  }
+
+  const handleLogin = async () => {
+    setError('')
+    const result = await user.authenticate(username(), password())
+    if (result.success) {
+      setShowLogin(false)
+      setUsername('')
+      setPassword('')
+    } else {
+      setError('Invalid credentials. Try: admin, dispatch, commander, responder')
+    }
+  }
+
+  return (
+    <div class="relative">
+      <Show when={user.currentUser.authenticated} fallback={
+        <button
+          onClick={() => setShowLogin(true)}
+          class="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm transition"
+        >
+          <span>👤</span>
+          <span class="text-gray-300">Sign In</span>
+        </button>
+      }>
+        <button
+          onClick={() => setShowMenu(!showMenu())}
+          class="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded transition"
+        >
+          <div class={`w-6 h-6 rounded-full ${roleColors[user.currentUser.role] || 'bg-gray-600'} flex items-center justify-center text-xs font-bold`}>
+            {user.currentUser.displayName?.[0]?.toUpperCase() || '?'}
+          </div>
+          <div class="text-left hidden sm:block">
+            <div class="text-sm font-medium leading-none">{user.currentUser.displayName}</div>
+            <div class="text-xs text-gray-400 mt-0.5">{user.SYSTEM_ROLES[user.currentUser.role]?.name}</div>
+          </div>
+          <span class="text-gray-400 text-xs">▾</span>
+        </button>
+
+        <Show when={showMenu()}>
+          <div class="absolute right-0 top-full mt-1 w-52 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+            <div class="p-3 border-b border-gray-700">
+              <div class="font-medium">{user.currentUser.displayName}</div>
+              <div class={`text-xs mt-1 px-2 py-0.5 rounded inline-block ${roleColors[user.currentUser.role] || 'bg-gray-600'}`}>
+                {user.SYSTEM_ROLES[user.currentUser.role]?.name}
+              </div>
+            </div>
+            <div class="p-2">
+              <button
+                onClick={() => { user.logout(); setShowMenu(false) }}
+                class="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded transition"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </Show>
+      </Show>
+
+      <Show when={showLogin()}>
+        <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={() => setShowLogin(false)}>
+          <div class="bg-gray-800 rounded-lg p-6 w-80 border border-gray-700" onClick={e => e.stopPropagation()}>
+            <h3 class="text-lg font-bold mb-4">Sign In</h3>
+            <div class="space-y-3">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username()}
+                onInput={e => setUsername(e.target.value)}
+                class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
+              />
+              <input
+                type="password"
+                placeholder="Password (any)"
+                value={password()}
+                onInput={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                class="w-full px-3 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-500 outline-none text-sm"
+              />
+              <Show when={error()}>
+                <div class="text-xs text-red-400">{error()}</div>
+              </Show>
+              <div class="text-xs text-gray-500">Demo users: admin · dispatch · commander · responder</div>
+              <button
+                onClick={handleLogin}
+                class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded font-medium transition"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+    </div>
+  )
+}
 
 const db = new OfflineDB()
 
@@ -57,16 +169,40 @@ export default function App() {
      const io = (await import('socket.io-client')).io
      const socket = io()
 
-     socket.on('incident:update', (incident) => {
-       setIncidents(prev => {
-         const existing = prev.find(i => i.id === incident.id)
-         if (existing) {
-           return prev.map(i => i.id === incident.id ? incident : i)
-         }
-         return [incident, ...prev]
-       })
-     })
-   })
+      socket.on('incident:update', (incident) => {
+        setIncidents(prev => {
+          const existing = prev.find(i => i.id === incident.id)
+          if (existing) {
+            return prev.map(i => i.id === incident.id ? incident : i)
+          }
+          return [incident, ...prev]
+        })
+      })
+
+      // Start background processes
+      setInterval(async () => {
+        const autoBackup = await db.settings.get('auto_backup')
+        if(autoBackup?.value !== false) {
+          await db.createAutoBackup()
+        }
+
+        // Auto archive incidents
+        const archiveDays = await db.settings.get('auto_archive_days')
+        const days = archiveDays?.value || 7
+        const cutoffTime = Date.now() - (days * 24 * 60 * 60 * 1000)
+        
+        const closedIncidents = await db.incidents
+          .where('status').anyOf('resolved', 'cancelled')
+          .and(i => i.updated_at < cutoffTime && !i.archived_at)
+          .toArray()
+
+        for(const incident of closedIncidents) {
+          await db.incidents.update(incident.id, { archived_at: Date.now() })
+        }
+
+      }, 3600000) // Run every hour
+
+    })
 
    // Sync App incidents to Dispatch system so modules receive live updates
    createEffect(() => {
@@ -221,19 +357,21 @@ export default function App() {
              <div class="text-sm text-gray-400">
                {new Date().toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}
              </div>
-              <button 
+              <button
                 onClick={toggleNightMode}
                 class={`px-2 py-1 rounded text-sm transition ${isNightMode() ? 'bg-red-700 hover:bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
                 title="Toggle Night Mode"
               >
                 {isNightMode() ? '🔴' : '🌙'}
               </button>
-              <button 
+              <DataManagement />
+              <button
                 onClick={() => setShowIncidentCreator(true)}
                 class="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-500 transition"
               >
                 + New Incident
               </button>
+              <UserProfile />
            </div>
         </div>
 

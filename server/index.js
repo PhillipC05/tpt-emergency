@@ -134,6 +134,18 @@ CREATE TABLE IF NOT EXISTS dispatch_rules (
   enabled INTEGER DEFAULT 1,
   created_at INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  display_name TEXT,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'FIRST_RESPONDER',
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at INTEGER,
+  updated_at INTEGER,
+  last_login INTEGER
+);
 `)
 
 // Ensure all default modules exist (INSERT OR IGNORE so existing rows are preserved)
@@ -151,6 +163,26 @@ ensureModule.run('medical', 'Medical Command', 1)
 ensureModule.run('mutualaid', 'Mutual Aid', 1)
 ensureModule.run('weather', 'Weather Monitor', 1)
 ensureModule.run('incidentreporting', 'Paperwork', 1)
+
+// Password helpers
+const hashPassword = (password) => {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex')
+  return `${salt}:${hash}`
+}
+const verifyPassword = (password, stored) => {
+  const [salt, hash] = stored.split(':')
+  const test = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex')
+  return hash === test
+}
+
+// Seed default users (INSERT OR IGNORE preserves existing passwords)
+const ensureUser = db.prepare('INSERT OR IGNORE INTO users (id, username, display_name, password_hash, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+const now = Date.now()
+ensureUser.run(crypto.randomUUID(), 'admin',      'System Admin',       hashPassword('admin123'),      'ADMINISTRATOR',   'active', now)
+ensureUser.run(crypto.randomUUID(), 'dispatch',   'Dispatch Operator',  hashPassword('dispatch123'),   'DISPATCHER',      'active', now)
+ensureUser.run(crypto.randomUUID(), 'commander',  'Incident Commander', hashPassword('commander123'),  'FIELD_COMMANDER', 'active', now)
+ensureUser.run(crypto.randomUUID(), 'responder',  'Field Responder',    hashPassword('responder123'),  'FIRST_RESPONDER', 'active', now)
 
 // Register plugins
 fastify.register(fastifyStatic, {
@@ -924,6 +956,83 @@ fastify.post('/api/power/active', async () => {
 //     fastify.log.info('Auto entering standby mode after 30 minutes inactivity')
 //   }
 // }, 60000)
+
+// =============================================
+// USER MANAGEMENT API
+// =============================================
+fastify.post('/api/auth/login', async (request, reply) => {
+  const { username, password } = request.body || {}
+  if (!username) return reply.code(400).send({ error: 'Username is required' })
+
+  const user = db.prepare('SELECT * FROM users WHERE username = ? AND status = ?').get(username.toLowerCase(), 'active')
+  if (!user) {
+    return reply.code(401).send({ error: 'Invalid credentials' })
+  }
+
+  // Allow admin login with blank password for initial setup
+  const isInitialBlankPassword = user.username === 'admin' && (password === '' || password === null || password === undefined)
+  
+  if (!isInitialBlankPassword && !verifyPassword(password, user.password_hash)) {
+    return reply.code(401).send({ error: 'Invalid credentials' })
+  }
+
+  db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(Date.now(), user.id)
+  return {
+    success: true,
+    user: { id: user.id, username: user.username, displayName: user.display_name, role: user.role }
+  }
+})
+
+fastify.get('/api/users', async () => {
+  return db.prepare('SELECT id, username, display_name, role, status, created_at, last_login FROM users ORDER BY created_at ASC').all()
+})
+
+fastify.post('/api/users', async (request, reply) => {
+  const { username, displayName, password, role } = request.body || {}
+  if (!username || !password || !role) return reply.code(400).send({ error: 'username, password and role are required' })
+
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username.toLowerCase())
+  if (existing) return reply.code(409).send({ error: 'Username already exists' })
+
+  const id = crypto.randomUUID()
+  db.prepare('INSERT INTO users (id, username, display_name, password_hash, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    id, username.toLowerCase(), displayName || username, hashPassword(password), role, 'active', Date.now()
+  )
+  return db.prepare('SELECT id, username, display_name, role, status, created_at FROM users WHERE id = ?').get(id)
+})
+
+fastify.put('/api/users/:id', async (request, reply) => {
+  const { id } = request.params
+  const { displayName, role, status, password } = request.body || {}
+
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(id)
+  if (!user) return reply.code(404).send({ error: 'User not found' })
+
+  if (password) {
+    db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(hashPassword(password), Date.now(), id)
+  }
+  if (displayName || role || status) {
+    const fields = []
+    const values = []
+    if (displayName) { fields.push('display_name = ?'); values.push(displayName) }
+    if (role)        { fields.push('role = ?');         values.push(role) }
+    if (status)      { fields.push('status = ?');       values.push(status) }
+    fields.push('updated_at = ?'); values.push(Date.now())
+    values.push(id)
+    db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  }
+
+  return db.prepare('SELECT id, username, display_name, role, status, created_at, last_login FROM users WHERE id = ?').get(id)
+})
+
+fastify.delete('/api/users/:id', async (request, reply) => {
+  const { id } = request.params
+  const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(id)
+  if (!user) return reply.code(404).send({ error: 'User not found' })
+  if (user.username === 'admin') return reply.code(403).send({ error: 'Cannot delete the admin account' })
+  db.prepare('DELETE FROM users WHERE id = ?').run(id)
+  return { success: true }
+})
 
 // Realtime Socket Handling
 fastify.ready().then(() => {

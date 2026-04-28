@@ -91,44 +91,34 @@ export function UserProvider(props) {
   }
 
   /**
-   * Authenticate user with credentials
+   * Authenticate user against the backend
    */
   const authenticate = async (username, password) => {
-    // Demo authentication - in production would validate against backend
-    const demoUsers = {
-      admin: { role: 'ADMINISTRATOR', name: 'System Admin' },
-      dispatch: { role: 'DISPATCHER', name: 'Dispatch Operator' },
-      commander: { role: 'FIELD_COMMANDER', name: 'Incident Commander' },
-      responder: { role: 'FIRST_RESPONDER', name: 'Field Responder' }
-    }
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      const data = await res.json()
+      if (!res.ok) return { success: false, error: data.error || 'Invalid credentials' }
 
-    const user = demoUsers[username.toLowerCase()]
-    
-    if (user) {
-      const role = SYSTEM_ROLES[user.role]
-      
+      const role = SYSTEM_ROLES[data.user.role]
       setCurrentUser({
-        id: Date.now(),
-        username,
-        displayName: user.name,
-        role: user.role,
-        roleLevel: role.level,
-        permissions: role.permissions,
+        id: data.user.id,
+        username: data.user.username,
+        displayName: data.user.displayName,
+        role: data.user.role,
+        roleLevel: role?.level ?? 99,
+        permissions: role?.permissions ?? [],
         authenticated: true,
         lastLogin: new Date().toISOString()
       })
-
-      addSession({
-        userId: currentUser.id,
-        username,
-        role: user.role,
-        loginTime: new Date().toISOString()
-      })
-
-      return { success: true, user: currentUser }
+      addSession({ userId: data.user.id, username: data.user.username, role: data.user.role, loginTime: new Date().toISOString() })
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: 'Could not reach server' }
     }
-
-    return { success: false, error: 'Invalid credentials' }
   }
 
   /**

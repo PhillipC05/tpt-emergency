@@ -150,6 +150,61 @@ export function ReportingProvider(props) {
           { id: 'control_measures', label: 'Control Measures', type: 'textarea' },
           { id: 'mitigation_time', label: 'Estimated Mitigation Time' }
         ]
+      },
+      [REPORT_TYPES.EQUIPMENT_CHECK]: {
+        fields: [
+          { id: 'equipment_id', label: 'Equipment ID', required: true },
+          { id: 'equipment_type', label: 'Equipment Type', required: true },
+          { id: 'checked_by', label: 'Checked By', required: true },
+          { id: 'check_date', label: 'Check Date', type: 'datetime', required: true },
+          { id: 'condition', label: 'Condition', options: ['Serviceable', 'Requires Attention', 'Unserviceable'] },
+          { id: 'battery_level', label: 'Battery Level %', type: 'number' },
+          { id: 'calibration_due', label: 'Calibration Due Date', type: 'datetime' },
+          { id: 'faults', label: 'Faults Noted', type: 'textarea' },
+          { id: 'action_taken', label: 'Action Taken' }
+        ]
+      },
+      [REPORT_TYPES.HANDOVER]: {
+        fields: [
+          { id: 'handover_from', label: 'Handover From', required: true },
+          { id: 'handover_to', label: 'Handover To', required: true },
+          { id: 'handover_time', label: 'Handover Time', type: 'datetime', required: true },
+          { id: 'active_incidents', label: 'Active Incidents', type: 'textarea', required: true },
+          { id: 'units_on_duty', label: 'Units On Duty' },
+          { id: 'outstanding_tasks', label: 'Outstanding Tasks', type: 'textarea' },
+          { id: 'resources_status', label: 'Resources Status', type: 'textarea' },
+          { id: 'communications_check', label: 'Communications Check', type: 'boolean' },
+          { id: 'notes', label: 'Additional Notes', type: 'textarea' }
+        ]
+      },
+      [REPORT_TYPES.DEBRIEF]: {
+        fields: [
+          { id: 'incident_id', label: 'Incident Reference', required: true },
+          { id: 'debrief_date', label: 'Debrief Date', type: 'datetime', required: true },
+          { id: 'facilitator', label: 'Facilitator', required: true },
+          { id: 'attendees', label: 'Attendees', type: 'textarea' },
+          { id: 'what_went_well', label: 'What Went Well', type: 'textarea' },
+          { id: 'what_could_improve', label: 'Areas for Improvement', type: 'textarea' },
+          { id: 'lessons_learned', label: 'Lessons Learned', type: 'textarea' },
+          { id: 'action_items', label: 'Action Items / Follow-up', type: 'textarea' },
+          { id: 'training_identified', label: 'Training Needs Identified', type: 'textarea' }
+        ]
+      },
+      [REPORT_TYPES.DRUG_ADMIN]: {
+        fields: [
+          { id: 'patient_id', label: 'Patient ID', required: true },
+          { id: 'administered_by', label: 'Administered By', required: true },
+          { id: 'drug_name', label: 'Drug Name', required: true },
+          { id: 'dose', label: 'Dose', required: true },
+          { id: 'route', label: 'Route', options: ['IV', 'IM', 'SC', 'Oral', 'Sublingual', 'Intranasal', 'Inhalation'] },
+          { id: 'time_administered', label: 'Time Administered', type: 'datetime', required: true },
+          { id: 'indication', label: 'Indication', required: true },
+          { id: 'patient_response', label: 'Patient Response', type: 'textarea' },
+          { id: 'adverse_effects', label: 'Adverse Effects' },
+          { id: 'batch_number', label: 'Batch Number' },
+          { id: 'expiry', label: 'Expiry Date' },
+          { id: 'witness', label: 'Witness / Second Signatory', required: true }
+        ]
       }
     }
 

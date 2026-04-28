@@ -62,7 +62,7 @@
 | ✅ | Module loader system |
 | ✅ | 🔥 Fire Department Module |
 | ✅ | 🚑 Ambulance Service Module |
-| ✅ | 🚔 Police Module |
+| ✅ | 🚔 Police Department Module |
 | ✅ | 🌪️ Disaster Response Module |
 | ✅ | Common dispatch layer |
 | ✅ | Resource tracking system |
@@ -75,6 +75,9 @@
 | ✅ | 🤝 Mutual Aid Coordinator |
 | ✅ | 🌤️ Weather Environmental Integration |
 | ✅ | Incident Closing Workflow |
+| ✅ | 🔍 Search & Rescue Module |
+| ✅ | 📻 Beacon Monitoring Module |
+| ✅ | 📋 Incident Reporting Module |
 
 ---
 
@@ -118,9 +121,9 @@
 
 ---
 
-## ✅ Done: 55 / 62 Tasks (89%)
+## ✅ Done: 61 / 65 Tasks (94%)
 ## 🔄 In Progress: 0 Tasks
-## ☐ Remaining: 7 Tasks
+## ☐ Remaining: 4 Tasks
 
 ---
 
@@ -154,6 +157,8 @@
 | ✅ | Full keyboard shortcut system for dispatchers | Medium |
 | ✅ | Disable all session timeouts / auto logout | Medium |
 | ✅ | Sequential permanent incident number generation | Medium |
+| ✅ | Night mode toggle visibility bug fix | Medium |
+| ✅ | Night mode sidebar contrast improvements | Medium |
 
 ---
 
@@ -172,4 +177,6 @@
 1.  ✅ Fixed large chunk size warning (MapLibre GL JS bundle) - implemented manual chunking
 2.  ✅ Fixed missing BeaconMonitoring export - build now succeeds
 3.  ✅ Production build working correctly with proper code splitting
-4.  Single executable packaging pending - pkg target updated to node18
+4.  ✅ Night mode toggle becomes invisible when night mode is active
+5.  ✅ Sidebar contrast readability issues in night mode
+6.  Single executable packaging pending - pkg target updated to node18

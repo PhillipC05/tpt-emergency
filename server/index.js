@@ -136,21 +136,21 @@ CREATE TABLE IF NOT EXISTS dispatch_rules (
 );
 `)
 
-// Insert default modules if empty
-const moduleCount = db.prepare('SELECT COUNT(*) as count FROM modules').get().count
-if (moduleCount === 0) {
-  const insertModule = db.prepare('INSERT OR IGNORE INTO modules (id, name, enabled) VALUES (?, ?, ?)')
-  insertModule.run('fire', 'Fire Department', 1)
-  insertModule.run('ambulance', 'Ambulance Service', 1)
-  insertModule.run('police', 'Police', 1)
-  insertModule.run('disaster', 'Disaster Response', 1)
-  insertModule.run('auditlog', 'Audit Log', 1)
-  insertModule.run('personnel', 'Personnel Accountability', 1)
-  insertModule.run('hazmat', 'HazMat Response', 1)
-  insertModule.run('medical', 'Medical Command', 1)
-  insertModule.run('mutualaid', 'Mutual Aid', 1)
-  insertModule.run('weather', 'Weather Monitor', 1)
-}
+// Ensure all default modules exist (INSERT OR IGNORE so existing rows are preserved)
+const ensureModule = db.prepare('INSERT OR IGNORE INTO modules (id, name, enabled) VALUES (?, ?, ?)')
+ensureModule.run('fire', 'Fire Department', 1)
+ensureModule.run('ambulance', 'Ambulance Service', 1)
+ensureModule.run('police', 'Police', 1)
+ensureModule.run('disaster', 'Disaster Response', 1)
+ensureModule.run('sar', 'Search & Rescue', 1)
+ensureModule.run('beacon', 'Beacon Monitoring', 1)
+ensureModule.run('auditlog', 'Audit Log', 1)
+ensureModule.run('personnel', 'Personnel Accountability', 1)
+ensureModule.run('hazmat', 'HazMat Response', 1)
+ensureModule.run('medical', 'Medical Command', 1)
+ensureModule.run('mutualaid', 'Mutual Aid', 1)
+ensureModule.run('weather', 'Weather Monitor', 1)
+ensureModule.run('incidentreporting', 'Paperwork', 1)
 
 // Register plugins
 fastify.register(fastifyStatic, {
@@ -964,8 +964,27 @@ fastify.ready().then(() => {
 
 const start = async () => {
   try {
-    const port = process.env.PORT || 8383
-    await fastify.listen({ port, host: '0.0.0.0' })
+    let port = process.env.PORT || 8383
+    let listening = false
+    
+    // Automatically find available port starting from 8383
+    while (!listening) {
+      try {
+        await fastify.listen({ port, host: '0.0.0.0' })
+        listening = true
+      } catch (err) {
+        if (err.code === 'EADDRINUSE') {
+          fastify.log.warn(`Port ${port} already in use, trying next port...`)
+          port++
+          // Prevent infinite loop - try up to 10 ports
+          if (port > 8393) {
+            throw new Error(`No available ports found in range 8383-8393`)
+          }
+        } else {
+          throw err
+        }
+      }
+    }
     
     console.log('\n')
     console.log('========================================')

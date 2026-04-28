@@ -7,7 +7,7 @@
 import { createSignal } from 'solid-js'
 
 const [nightModeEnabled, setNightModeEnabled] = createSignal(false)
-const [autoNightMode, setAutoNightModeSignal] = createSignal(true)
+const [autoNightMode, setAutoNightModeSignal] = createSignal(false)
 
 export function enableNightMode() {
   document.documentElement.classList.add('night-mode')
@@ -86,6 +86,37 @@ style.textContent = `
 .night-mode video,
 .night-mode canvas {
   filter: sepia(100%) saturate(100%) brightness(70%) hue-rotate(-50deg) !important;
+}
+
+/* EXCLUDE night mode toggle button from filter so it remains visible */
+.night-mode .night-mode-toggle,
+.night-mode [title="Toggle Night Mode"] {
+  filter: none !important;
+  background-color: #dc2626 !important;
+  border-color: white !important;
+  color: white !important;
+}
+
+/* Sidebar visibility improvements for night mode */
+.night-mode .bg-gray-800,
+.night-mode .bg-gray-900 {
+  background-color: #1a0000 !important;
+}
+
+.night-mode .bg-gray-700 {
+  background-color: #330000 !important;
+}
+
+.night-mode .hover\:bg-gray-700\/50:hover {
+  background-color: #400000 !important;
+}
+
+.night-mode .border-gray-700 {
+  border-color: #440000 !important;
+}
+
+.night-mode .text-gray-400 {
+  color: #aa6666 !important;
 }
 
 .night-mode * {

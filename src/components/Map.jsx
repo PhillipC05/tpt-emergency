@@ -12,7 +12,7 @@ export function Map() {
     
     const mapInstance = new maplibregl.Map({
       container: mapContainer,
-      style: 'https://tile.openstreetmap.org/styles/osm-bright/style.json',
+      style: 'https://demotiles.maplibre.org/style.json',
       center: [174.885971, -40.900557],
       zoom: 10,
       attributionControl: true
@@ -28,7 +28,8 @@ export function Map() {
       api: 'nominatim',
       limit: 5,
       placeholder: 'Search address...',
-      country: 'nz'
+      country: 'nz',
+      maplibregl: maplibregl
     }), 'top-left')
 
     mapInstance.on('load', () => {

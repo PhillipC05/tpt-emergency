@@ -168,20 +168,33 @@ export function DispatchProvider(props) {
     }
   })
 
-  const value = {
-    incidents,
-    units,
-    dispatchLog,
-    activeDispatch,
-    UNIT_STATUS,
-    INCIDENT_PRIORITY,
-    createIncident,
-    dispatchUnit,
-    updateUnitStatus,
-    getAvailableUnits,
-    registerUnit,
-    addDispatchLog
-  }
+   // Expose setIncidents for syncing from parent App component
+   const value = {
+     incidents,
+     setIncidents,
+     units,
+     setUnits,
+     dispatchLog,
+     activeDispatch,
+     UNIT_STATUS,
+     INCIDENT_PRIORITY,
+     createIncident,
+     dispatchUnit,
+     updateUnitStatus,
+     getAvailableUnits,
+     registerUnit,
+     addDispatchLog
+   }
+
+   // Expose dispatch on window for App component sync
+   if (typeof window !== 'undefined') {
+     window.dispatch = value
+     console.log(`✅ [DISPATCH] Provider initialized and exposed on window.dispatch`, {
+       unitsCount: units.length,
+       incidentsCount: incidents.length,
+       hasSetIncidents: !!setIncidents
+     })
+   }
 
   return (
     <DispatchContext.Provider value={value}>

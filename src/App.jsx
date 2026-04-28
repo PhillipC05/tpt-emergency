@@ -9,7 +9,7 @@ import { AlarmReceiver } from './components/AlarmReceiver'
 import { NetworkHealth } from './components/NetworkHealth'
 import { GlobalUndo } from './components/GlobalUndo'
 import { VehicleMode } from './components/VehicleMode'
-import { initNightMode } from './lib/night-mode'
+import { initNightMode, toggleNightMode, isNightMode } from './lib/night-mode'
 import { OfflineDB } from './lib/offline-db'
 import { DispatchProvider } from './modules/CommonDispatchLayer'
 import { ResourceProvider } from './modules/ResourceTracking'
@@ -17,11 +17,20 @@ import { TriageProvider } from './modules/TriageManagement'
 import { UserProvider } from './modules/UserRoleSystem'
 import { AuditLogProvider } from './modules/AuditLogSystem'
 import BeaconProvider from './modules/BeaconMonitoring'
+import SARProvider from './modules/SearchAndRescue'
+import ReportingProvider from './modules/IncidentReporting'
 
 const db = new OfflineDB()
 
 export default function App() {
   const [activeModule, setActiveModule] = createSignal('dashboard')
+
+  // Debug active module changes
+  createEffect(() => {
+    console.log(`🔄 [APP] Active module changed to: ${activeModule()}`)
+    const foundModule = modules().find(m => m.id === activeModule())
+    console.log(`📋 [APP] Found matching module:`, foundModule)
+  })
   const [online, setOnline] = createSignal(navigator.onLine)
   const [modules, setModules] = createSignal([])
   const [incidents, setIncidents] = createSignal([])
@@ -29,40 +38,56 @@ export default function App() {
   const [showIncidentCreator, setShowIncidentCreator] = createSignal(false)
   const [selectedIncident, setSelectedIncident] = createSignal(null)
 
-  onMount(async () => {
-    window.addEventListener('online', () => setOnline(true))
-    window.addEventListener('offline', () => setOnline(false))
-    
-    initNightMode()
+   onMount(async () => {
+     window.addEventListener('online', () => setOnline(true))
+     window.addEventListener('offline', () => setOnline(false))
+     
+     initNightMode()
 
-    // Load enabled modules
-    const res = await fetch('/api/modules')
-    setModules(await res.json())
+     // Load enabled modules
+     const res = await fetch('/api/modules')
+     setModules(await res.json())
 
-    // Load incidents
-    const incidentsRes = await fetch('/api/incidents')
-    setIncidents(await incidentsRes.json())
+     // Load incidents
+     const incidentsRes = await fetch('/api/incidents')
+     const initialIncidents = await incidentsRes.json()
+     setIncidents(initialIncidents)
 
-    // Connect to realtime
-    const io = (await import('socket.io-client')).io
-    const socket = io()
+     // Connect to realtime
+     const io = (await import('socket.io-client')).io
+     const socket = io()
 
-    socket.on('incident:update', (incident) => {
-      setIncidents(prev => {
-        const existing = prev.find(i => i.id === incident.id)
-        if (existing) {
-          return prev.map(i => i.id === incident.id ? incident : i)
-        }
-        return [incident, ...prev]
-      })
-    })
-  })
+     socket.on('incident:update', (incident) => {
+       setIncidents(prev => {
+         const existing = prev.find(i => i.id === incident.id)
+         if (existing) {
+           return prev.map(i => i.id === incident.id ? incident : i)
+         }
+         return [incident, ...prev]
+       })
+     })
+   })
+
+   // Sync App incidents to Dispatch system so modules receive live updates
+   createEffect(() => {
+     // Import the dispatch context to sync incidents
+     const { setIncidents } = window.dispatch || {}
+     if (setIncidents) {
+       console.log(`🔄 [APP] Syncing ${incidents().length} incidents to Dispatch Provider`, incidents())
+       // @ts-ignore
+       setIncidents(incidents())
+       console.log(`✅ [APP] Sync completed successfully`)
+     } else {
+       console.warn(`⚠️ [APP] Dispatch Provider not ready yet, waiting for init...`)
+     }
+   })
 
   const moduleColors = {
     fire: 'bg-orange-600',
     ambulance: 'bg-red-600',
     police: 'bg-blue-700',
     disaster: 'bg-yellow-600',
+    sar: 'bg-emerald-600',
     auditlog: 'bg-gray-600',
     personnel: 'bg-teal-600',
     hazmat: 'bg-amber-700',
@@ -76,6 +101,7 @@ export default function App() {
     ambulance: '🚑',
     police: '🚔',
     disaster: '🌪️',
+    sar: '🔍',
     auditlog: '📜',
     personnel: '👥',
     hazmat: '☢️',
@@ -86,6 +112,8 @@ export default function App() {
 
   return (
     <BeaconProvider>
+    <SARProvider>
+    <ReportingProvider>
     <DispatchProvider>
       <UserProvider>
         <AuditLogProvider>
@@ -156,7 +184,10 @@ export default function App() {
           <For each={modules().filter(m => m.enabled)}>
             {module => (
               <button
-                onClick={() => setActiveModule(module.id)}
+                onClick={() => {
+                  console.log(`👆 [SIDEBAR] User clicked module: ${module.id} ${module.name}`)
+                  setActiveModule(module.id)
+                }}
                 class={`w-full flex items-center gap-3 p-3 rounded-lg transition ${activeModule() === module.id ? 'bg-gray-700' : 'hover:bg-gray-700/50'}`}
               >
                 <span>{moduleIcons[module.id] || '📋'}</span>
@@ -186,17 +217,24 @@ export default function App() {
             {modules().find(m => m.id === activeModule())?.name || ''}
           </div>
           
-          <div class="flex items-center gap-3">
-            <div class="text-sm text-gray-400">
-              {new Date().toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}
-            </div>
-             <button 
-               onClick={() => setShowIncidentCreator(true)}
-               class="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-500 transition"
-             >
-               + New Incident
-             </button>
-          </div>
+           <div class="flex items-center gap-3">
+             <div class="text-sm text-gray-400">
+               {new Date().toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}
+             </div>
+              <button 
+                onClick={toggleNightMode}
+                class={`px-2 py-1 rounded text-sm transition ${isNightMode() ? 'bg-red-700 hover:bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                title="Toggle Night Mode"
+              >
+                {isNightMode() ? '🔴' : '🌙'}
+              </button>
+              <button 
+                onClick={() => setShowIncidentCreator(true)}
+                class="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-500 transition"
+              >
+                + New Incident
+              </button>
+           </div>
         </div>
 
          {/* Incident Creator Modal */}
@@ -273,11 +311,9 @@ export default function App() {
 
            {activeModule() === 'map' && <Map />}
            {activeModule() === 'bluetooth' && <BluetoothManager />}
-           {activeModule() === 'communications' && <ModuleLoader moduleId="communications" />}
-          
-          {modules().find(m => m.id === activeModule()) && (
-            <ModuleLoader moduleId={activeModule()} />
-          )}
+           {!['dashboard', 'map', 'bluetooth'].includes(activeModule()) && (
+             <ModuleLoader moduleId={activeModule()} />
+           )}
         </div>
       </div>
       <PanicButton />
@@ -291,6 +327,8 @@ export default function App() {
         </AuditLogProvider>
       </UserProvider>
     </DispatchProvider>
+    </ReportingProvider>
+    </SARProvider>
     </BeaconProvider>
   )
 }

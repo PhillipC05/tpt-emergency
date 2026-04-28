@@ -7,7 +7,22 @@
 import { createSignal, createEffect, createContext, useContext, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 
-const BeaconContext = createContext()
+const BeaconContext = createContext({
+  scanningActive: () => false,
+  startScanning: async () => ({ success: false }),
+  stopScanning: () => {},
+  detectedBeacons: [],
+  alertBeacons: () => [],
+  rangingEnabled: () => true,
+  panicMode: () => false,
+  triggerPanicAlert: () => {},
+  cancelPanicAlert: () => {},
+  startP2PSync: async () => ({ success: false }),
+  connectMedicalDevice: async () => ({ success: false }),
+  connectRadioInterface: async () => ({ success: false }),
+  BEACON_TYPES: {},
+  PROXIMITY_LEVELS: {}
+})
 
 export function BeaconProvider(props) {
   const [detectedBeacons, setDetectedBeacons] = createStore([])
@@ -536,6 +551,95 @@ export function BeaconMonitoring() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+export function useBeacon() {
+  return useContext(BeaconContext)
+}
+
+/**
+ * Beacon Monitoring UI Module
+ */
+export function BeaconMonitoringUI() {
+  const beacon = useBeacon()
+
+  return (
+    <div class="p-6 h-full overflow-auto">
+      <h2 class="text-2xl font-bold mb-4">📻 Beacon Monitoring</h2>
+
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <div class="text-3xl font-bold">{beacon.detectedBeacons.length}</div>
+          <div class="text-sm text-gray-400">Beacons Detected</div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <div class="text-3xl font-bold">{beacon.alertBeacons().length}</div>
+          <div class="text-sm text-gray-400">Alert Beacons</div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <div class="text-3xl font-bold">{beacon.scanningActive() ? 'ACTIVE' : 'STOPPED'}</div>
+          <div class="text-sm text-gray-400">Scan Status</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <button
+          onClick={beacon.startScanning}
+          disabled={beacon.scanningActive()}
+          class={`p-3 rounded-lg font-medium transition ${
+            beacon.scanningActive() ? 'bg-gray-700 opacity-50' : 'bg-green-600 hover:bg-green-500'
+          }`}
+        >
+          Start Scanning
+        </button>
+        <button
+          onClick={beacon.stopScanning}
+          disabled={!beacon.scanningActive()}
+          class={`p-3 rounded-lg font-medium transition ${
+            !beacon.scanningActive() ? 'bg-gray-700 opacity-50' : 'bg-red-600 hover:bg-red-500'
+          }`}
+        >
+          Stop Scanning
+        </button>
+      </div>
+
+      <div class="bg-gray-800 rounded-lg p-5">
+        <h3 class="font-semibold mb-4">Detected Beacons</h3>
+        <div class="space-y-2">
+          {beacon.detectedBeacons.length === 0 ? (
+            <div class="text-center text-gray-500 py-8">
+              No beacons detected. Start scanning.
+            </div>
+          ) : (
+            beacon.detectedBeacons.map(beacon => (
+              <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded">
+                <div>
+                  <div class="font-medium">{beacon.name}</div>
+                  <div class="text-xs text-gray-400">{beacon.type}</div>
+                </div>
+                <div class="text-sm">{beacon.rssi} dBm</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div class="mt-6 bg-gray-800 rounded-lg p-5">
+        <h3 class="font-semibold mb-4">Beacon Capabilities</h3>
+        <ul class="space-y-2 text-gray-400 text-sm">
+          <li>✅ Bluetooth Low Energy scanning</li>
+          <li>✅ iBeacon / Eddystone support</li>
+          <li>✅ Distance ranging estimation</li>
+          <li>✅ Personnel tracking beacons</li>
+          <li>✅ Emergency alert beacons</li>
+          <li>✅ Medical device integration</li>
+          <li>✅ Peer to peer data sync</li>
+          <li>✅ Radio interface integration</li>
+        </ul>
+      </div>
+
     </div>
   )
 }

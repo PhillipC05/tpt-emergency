@@ -5,324 +5,654 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>One Platform. Every Agency. Your Way. — Modular Dispatch Architecture — TPT Emergency</title>
   <meta name="description" content="TPT Emergency's modular dispatch architecture lets Fire, Ambulance, Police, and Disaster agencies share one platform while keeping their own workflows. Enable only what you need.">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { DEFAULT: '#dc2626', dark: '#991b1b', light: '#ef4444' },
-            dark: { 900: '#111827', 800: '#1f2937', 700: '#374151' }
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .gradient-text {
-      background: linear-gradient(135deg, #dc2626 0%, #f87171 50%, #fca5a5 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #ffffff;
+      --surface:   #f7f7f7;
+      --border:    #e8e8e8;
+      --text:      #111111;
+      --muted:     #555555;
+      --faint:     #888888;
+      --accent:    #dc2626;
+      --accent-dk: #b91c1c;
+      --radius:    8px;
     }
-    .prose p { margin-bottom: 1.25rem; line-height: 1.75; color: #9ca3af; }
-    .prose h2 { color: white; font-weight: 700; font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; }
-    .prose h3 { color: #e5e7eb; font-weight: 600; font-size: 1.125rem; margin-top: 2rem; margin-bottom: 0.75rem; }
-    .prose ul { margin-bottom: 1.25rem; padding-left: 1.5rem; }
-    .prose li { margin-bottom: 0.5rem; color: #9ca3af; }
-    .prose strong { color: #e5e7eb; }
-    .prose code { background: #1f2937; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; color: #fca5a5; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 16px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .nav-logo-mark {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.9rem;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--text); font-weight: 500; }
+    .nav-links .btn-gh {
+      padding: 6px 16px;
+      background: var(--text);
+      color: #fff;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .nav-links .btn-gh:hover { opacity: 0.8; color: #fff; }
+    .nav-mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      padding: 4px;
+    }
+    .nav-mobile-menu {
+      display: none;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      padding: 12px 24px 16px;
+    }
+    .nav-mobile-menu a {
+      display: block;
+      padding: 10px 0;
+      font-size: 0.95rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-mobile-menu a:last-child { border-bottom: none; }
+    .nav-mobile-menu a.active { color: var(--text); font-weight: 500; }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-mobile-toggle { display: block; }
+      .nav-mobile-menu.open { display: block; }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 80px 24px 60px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--accent);
+    }
+    .hero h1 {
+      font-family: 'Cardo', Georgia, serif;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 600px;
+    }
+
+    /* ── Content ── */
+    .content-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px 96px;
+    }
+
+    /* prose */
+    .prose h2 {
+      font-family: 'Cardo', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 3rem 0 0.875rem;
+      line-height: 1.25;
+    }
+    .prose h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 2rem 0 0.625rem;
+    }
+    .prose p {
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 1.25rem;
+    }
+    .prose ul {
+      list-style: none;
+      margin: 0 0 1.25rem;
+      padding: 0;
+    }
+    .prose ul li {
+      position: relative;
+      padding-left: 1.25rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 0.5rem;
+    }
+    .prose ul li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .prose strong { color: var(--text); font-weight: 600; }
+    .prose code {
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.85em;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--accent-dk);
+    }
+
+    /* module cards */
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 2rem 0;
+    }
+    @media (max-width: 560px) { .module-grid { grid-template-columns: 1fr; } }
     .module-card {
-      transition: all 0.3s ease;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     .module-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(220, 38, 38, 0.3);
+      border-color: #d1d1d1;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .module-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .module-card-header span { font-size: 1.4rem; line-height: 1; }
+    .module-card-header h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .module-card p {
+      font-size: 0.83rem;
+      color: var(--faint);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* arch stack */
+    .arch-stack {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin: 2.5rem 0;
+    }
+    .arch-stack-title {
+      font-family: 'Cardo', Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .arch-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .arch-row:last-child { border-bottom: none; }
+    .arch-label {
+      width: 100px;
+      flex-shrink: 0;
+      font-family: 'Menlo', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: right;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .arch-desc {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    /* divider */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    /* CTA buttons */
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 2.5rem;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius);
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    .btn-primary:hover { background: var(--accent-dk); color: #fff; }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover { border-color: #ccc; background: #f0f0f0; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .footer-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      list-style: none;
+    }
+    .footer-links a {
+      font-size: 0.875rem;
+      color: var(--faint);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+    .footer-links a.active { color: var(--text); font-weight: 500; }
+    .footer-copy {
+      font-size: 0.8rem;
+      color: var(--faint);
     }
   </style>
 </head>
-<body class="bg-dark-900 text-white overflow-x-hidden">
+<body>
 
-  <!-- Navigation -->
-  <nav class="fixed top-0 w-full z-50 bg-dark-900/80 backdrop-blur-md border-b border-dark-700/50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <a href="landing.html" class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-brand flex items-center justify-center text-white font-bold text-lg">E</div>
-          <span class="font-bold text-xl">TPT Emergency</span>
-        </a>
-        <div class="hidden md:flex items-center gap-8">
-          <a href="landing.html#features" class="text-gray-300 hover:text-white transition">Features</a>
-          <a href="landing.html#modules" class="text-gray-300 hover:text-white transition">Modules</a>
-          <a href="landing.html#deployment" class="text-gray-300 hover:text-white transition">Deploy</a>
-          <a href="pillar-offline-first.html" class="text-gray-300 hover:text-white transition">Offline-First</a>
-          <a href="pillar-modular-dispatch.html" class="text-white font-medium border-b-2 border-brand">Modular Dispatch</a>
-          <a href="https://github.com/TPT-Open-Source/tpt-emergency" target="_blank" class="px-4 py-2 bg-brand hover:bg-brand-light rounded-lg transition font-medium">GitHub</a>
-        </div>
-        <button id="mobile-menu-btn" class="md:hidden text-gray-300">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
-    <div id="mobile-menu" class="hidden md:hidden bg-dark-800 border-t border-dark-700">
-      <div class="px-4 py-3 space-y-2">
-        <a href="landing.html" class="block py-2 text-gray-300">Home</a>
-        <a href="pillar-offline-first.html" class="block py-2 text-gray-300">Offline-First</a>
-        <a href="pillar-modular-dispatch.html" class="block py-2 text-white font-medium">Modular Dispatch</a>
-      </div>
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="landing.html" class="nav-logo">
+        <div class="nav-logo-mark">E</div>
+        TPT Emergency
+      </a>
+      <ul class="nav-links">
+        <li><a href="landing.html#features">Features</a></li>
+        <li><a href="landing.html#modules">Modules</a></li>
+        <li><a href="landing.html#deployment">Deploy</a></li>
+        <li><a href="pillar-offline-first.html">Offline-First</a></li>
+        <li><a href="pillar-modular-dispatch.html" class="active">Modular Dispatch</a></li>
+        <li>
+          <a href="https://github.com/PhillipC05/tpt-emergency" target="_blank" rel="noopener noreferrer" class="btn-gh">
+            GitHub
+          </a>
+        </li>
+      </ul>
+      <button class="nav-mobile-toggle" id="mobile-toggle" aria-label="Toggle menu">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+    <div class="nav-mobile-menu" id="mobile-menu">
+      <a href="landing.html">Home</a>
+      <a href="pillar-offline-first.html">Offline-First</a>
+      <a href="pillar-modular-dispatch.html" class="active">Modular Dispatch</a>
+      <a href="https://github.com/PhillipC05/tpt-emergency" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
   </nav>
 
   <!-- Hero -->
-  <section class="pt-32 pb-20 lg:pt-40 lg:pb-28">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand-light text-sm font-medium mb-6">
-        Deep Dive
-      </div>
-      <h1 class="text-4xl lg:text-6xl font-extrabold leading-tight mb-6">
-        One Platform.<br>
-        Every Agency.<br>
-        <span class="gradient-text">Your Way.</span>
-      </h1>
-      <p class="text-xl text-gray-400 leading-relaxed max-w-2xl">
-        Fire departments don't work like ambulance services. Police dispatch isn't disaster response. TPT Emergency's modular architecture gives each agency its own tools while sharing a common operational picture.
+  <header class="hero">
+    <div class="hero-tag">Deep Dive</div>
+    <h1>One Platform.<br>Every Agency.<br><em>Your Way.</em></h1>
+    <p>
+      Fire departments don't work like ambulance services. Police dispatch isn't disaster response. TPT Emergency's
+      modular architecture gives each agency its own tools while sharing a common operational picture.
+    </p>
+  </header>
+
+  <!-- Content -->
+  <main class="content-wrap">
+    <div class="prose">
+
+      <h2>What Is Modular Dispatch?</h2>
+      <p>
+        Traditional emergency software is monolithic: you buy a massive system and get features for disciplines you'll
+        never use. TPT Emergency takes the opposite approach. It's a <strong>common dispatch layer</strong> with
+        <strong>swappable modules</strong> on top.
       </p>
-    </div>
-  </section>
+      <p>
+        Think of it like a smartphone. The operating system (common dispatch layer) handles calls, contacts, and messaging.
+        Apps (modules) provide specialised functionality. You install only the apps you need. TPT Emergency works the same way.
+      </p>
 
-  <!-- Main Content -->
-  <section class="pb-24">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="prose max-w-none">
+      <h2>The Common Dispatch Layer</h2>
+      <p>
+        Every module in TPT Emergency sits on top of a shared foundation called the <strong>Common Dispatch Layer</strong>.
+        Regardless of which modules are enabled, every agency shares:
+      </p>
+      <ul>
+        <li><strong>Incident management</strong> — A unified incident record that any module can read and extend</li>
+        <li><strong>User roles &amp; permissions</strong> — Granular access control with role-based permissions across all modules</li>
+        <li><strong>Audit logging</strong> — Every action logged with a tamper-evident event history</li>
+        <li><strong>Resource tracking</strong> — Shared inventory of units, equipment, and personnel</li>
+        <li><strong>Real-time sync</strong> — Socket.IO mesh network broadcasts updates to all connected clients</li>
+        <li><strong>Offline data</strong> — SQLite + IndexedDB storage used by all modules uniformly</li>
+      </ul>
+      <p>
+        A Fire module and an Ambulance module can both reference the same incident, see each other's unit assignments,
+        and share a common timeline — without duplicating data or building brittle integrations.
+      </p>
 
-        <h2>What Is Modular Dispatch?</h2>
-        <p>
-          Traditional emergency software is monolithic: you buy a massive system and get features for disciplines you'll never use. TPT Emergency takes the opposite approach. It's a <strong>common dispatch layer</strong> with <strong>swappable modules</strong> on top.
-        </p>
-        <p>
-          Think of it like a smartphone. The operating system (common dispatch layer) handles calls, contacts, and messaging. Apps (modules) provide specialized functionality. You install only the apps you need. TPT Emergency works the same way.
-        </p>
+      <h2>Module Breakdown</h2>
+      <p>
+        TPT Emergency ships with 20+ modules. Each can be enabled or disabled independently via the admin panel.
+      </p>
 
-        <h2>The Common Dispatch Layer</h2>
-        <p>
-          Every module in TPT Emergency sits on top of a shared foundation called the <strong>Common Dispatch Layer</strong>. This ensures that regardless of which modules are enabled, every agency shares:
-        </p>
-        <ul>
-          <li><strong>Incident management</strong> — A unified incident record that any module can read and extend</li>
-          <li><strong>User roles & permissions</strong> — Granular access control with role-based permissions across all modules</li>
-          <li><strong>Audit logging</strong> — Every action is logged with a tamper-evident event history</li>
-          <li><strong>Resource tracking</strong> — Shared inventory of units, equipment, and personnel</li>
-          <li><strong>Real-time sync</strong> — Socket.IO mesh network broadcasts updates to all connected clients</li>
-          <li><strong>Offline data</strong> — SQLite + IndexedDB storage used by all modules uniformly</li>
-        </ul>
-        <p>
-          This means a Fire module and an Ambulance module can both reference the same incident, see each other's unit assignments, and share a common timeline — without duplicating data or building brittle integrations.
-        </p>
-
-        <h2>Module Breakdown</h2>
-        <p>
-          TPT Emergency ships with 20+ modules. Each can be enabled or disabled independently via the admin panel. Here's what each module provides:
-        </p>
-
-        <div class="grid sm:grid-cols-2 gap-4 my-8 not-prose">
-          <div class="module-card p-5 rounded-xl bg-orange-600/5 border border-orange-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🔥</span>
-              <h4 class="font-semibold text-white">Fire Department</h4>
-            </div>
-            <p class="text-sm text-gray-400">Incident command structure, apparatus tracking, water supply logging, pre-plans, and ICS role assignment.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-red-600/5 border border-red-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🚑</span>
-              <h4 class="font-semibold text-white">Ambulance Service</h4>
-            </div>
-            <p class="text-sm text-gray-400">Patient transport tracking, hospital diversion status, ETA calculation, and crew scheduling.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-blue-600/5 border border-blue-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🚔</span>
-              <h4 class="font-semibold text-white">Police Department</h4>
-            </div>
-            <p class="text-sm text-gray-400">Unit tracking, call sign assignment, evidence logging, radio channel management, and BOLO alerts.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-yellow-600/5 border border-yellow-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🌪️</span>
-              <h4 class="font-semibold text-white">Disaster Response</h4>
-            </div>
-            <p class="text-sm text-gray-400">Multi-agency coordination, evacuation zone mapping, shelter management, and resource mutual aid.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-amber-700/5 border border-amber-700/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">☢️</span>
-              <h4 class="font-semibold text-white">HazMat Response</h4>
-            </div>
-            <p class="text-sm text-gray-400">Plume modeling, containment logging, decon tracking, and chemical database lookup.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-rose-700/5 border border-rose-700/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🩺</span>
-              <h4 class="font-semibold text-white">Medical Command / MCI</h4>
-            </div>
-            <p class="text-sm text-gray-400">Mass casualty incident management, triage tag tracking, treatment area assignment, and patient flow.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-indigo-600/5 border border-indigo-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🤝</span>
-              <h4 class="font-semibold text-white">Mutual Aid Coordinator</h4>
-            </div>
-            <p class="text-sm text-gray-400">Cross-jurisdiction resource requests, automatic MOU compliance, and incoming unit integration.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-teal-600/5 border border-teal-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">👥</span>
-              <h4 class="font-semibold text-white">Personnel Accountability</h4>
-            </div>
-            <p class="text-sm text-gray-400">PAR checks, beacon-based mustering, entry/exit logging, and roll call automation.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-sky-600/5 border border-sky-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">🌤️</span>
-              <h4 class="font-semibold text-white">Weather Integration</h4>
-            </div>
-            <p class="text-sm text-gray-400">Real-time weather feeds, lightning detection, flood zone overlays, and wind direction for HazMat.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-violet-600/5 border border-violet-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">📻</span>
-              <h4 class="font-semibold text-white">Radio Channel Management</h4>
-            </div>
-            <p class="text-sm text-gray-400">Channel assignment, transmission logging, interoperability bridge tracking, and talkgroup management.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-gray-600/5 border border-gray-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">📜</span>
-              <h4 class="font-semibold text-white">Audit Log System</h4>
-            </div>
-            <p class="text-sm text-gray-400">Tamper-evident event history, search & filter, export for legal discovery, and chain of custody.</p>
-          </div>
-          <div class="module-card p-5 rounded-xl bg-pink-600/5 border border-pink-600/15">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-2xl">📞</span>
-              <h4 class="font-semibold text-white">Call Center Console</h4>
-            </div>
-            <p class="text-sm text-gray-400">Full call-taking interface, caller location, script guidance, and automatic incident generation.</p>
-          </div>
-
-        <h2>Integration Ecosystem</h2>
-        <p>
-          Beyond the core agency modules, TPT Emergency includes a suite of cross-cutting integration modules that connect to external systems and sensors:
-        </p>
-        <ul>
-          <li><strong>Bluetooth Beacon Monitoring</strong> — Personnel and equipment tracking via BLE beacons with real-time ranging</li>
-          <li><strong>Geofence Alerting</strong> — Automatic alerts when units enter or leave defined zones</li>
-          <li><strong>Traffic-Aware Routing</strong> — ETA calculations that factor in real-time traffic conditions</li>
-          <li><strong>Search & Rescue Patterns</strong> — Predefined search patterns (grid, line, spiral) with coverage tracking</li>
-          <li><strong>Route Calculation</strong> — Turn-by-turn routing with hazmat and vehicle-type restrictions</li>
-          <li><strong>Resource Maintenance Logging</strong> — Equipment inspection schedules, failure tracking, and readiness status</li>
-          <li><strong>Unit Shift Scheduling</strong> — Crew roster management with overtime tracking and qualification checking</li>
-        </ul>
-
-        <h2>Deployment Flexibility</h2>
-        <p>
-          The modular design directly enables flexible deployment. A rural volunteer fire department can run TPT Emergency on a single laptop with only the Fire and Personnel Accountability modules enabled. A metropolitan EMS system can deploy a full server cluster with Ambulance, Medical Command, Call Center, and Weather modules active.
-        </p>
-        <p>
-          Because modules are loaded dynamically at runtime, you don't pay a performance penalty for disabled modules. The application bundle only includes what you enable. This is especially important for the <strong>single static HTML build</strong> — tree-shaking removes unused modules automatically.
-        </p>
-
-        <h2>Building a Custom Module</h2>
-        <p>
-          TPT Emergency's module system is designed for extension. A custom module is a SolidJS component that exports a standard interface. The <code>ModuleLoader</code> dynamically imports and renders modules based on the enabled configuration from the admin API.
-        </p>
-        <p>
-          To build a new module, you create:
-        </p>
-        <ul>
-          <li>A <code>.jsx</code> component file in <code>src/modules/</code></li>
-          <li>A module registration entry that defines the module ID, name, icon, and required permissions</li>
-          <li>Optional: a context provider if the module needs to share state with other components</li>
-        </ul>
-        <p>
-          The module automatically gains access to the common dispatch layer, user roles, audit logging, and real-time sync without any additional wiring. This means a new module can be operational in hours, not months.
-        </p>
-
-        <div class="my-12 p-8 rounded-2xl bg-dark-800 border border-dark-700">
-          <h3 class="text-lg font-semibold text-white mb-4">Module Architecture Stack</h3>
-          <div class="space-y-3">
-            <div class="flex items-center gap-4 p-3 rounded-lg bg-dark-900/50 border border-dark-700">
-              <div class="w-24 text-xs font-mono text-brand-light text-right">Modules</div>
-              <div class="flex-1 text-sm text-gray-300">Fire, Ambulance, Police, Disaster, HazMat, Medical, Mutual Aid, etc.</div>
-            <div class="flex items-center gap-4 p-3 rounded-lg bg-dark-900/50 border border-dark-700">
-              <div class="w-24 text-xs font-mono text-blue-400 text-right">Providers</div>
-              <div class="flex-1 text-sm text-gray-300">Dispatch, User, Audit, Resource, Triage, Beacon contexts</div>
-            <div class="flex items-center gap-4 p-3 rounded-lg bg-dark-900/50 border border-dark-700">
-              <div class="w-24 text-xs font-mono text-green-400 text-right">Common Layer</div>
-              <div class="flex-1 text-sm text-gray-300">Incidents, roles, permissions, sync, offline storage</div>
-            <div class="flex items-center gap-4 p-3 rounded-lg bg-dark-900/50 border border-dark-700">
-              <div class="w-24 text-xs font-mono text-purple-400 text-right">Runtime</div>
-              <div class="flex-1 text-sm text-gray-300">SolidJS, Tailwind, MapLibre, Socket.IO client</div>
-            <div class="flex items-center gap-4 p-3 rounded-lg bg-dark-900/50 border border-dark-700">
-              <div class="w-24 text-xs font-mono text-gray-400 text-right">Platform</div>
-              <div class="flex-1 text-sm text-gray-300">Browser, PWA, Fastify, SQLite, IndexedDB</div>
-          </div>
-
-        <h2>Real-World Use Cases</h2>
-
-        <h3>Multi-Agency Disaster: Earthquake Response</h3>
-        <p>
-          A magnitude 7.2 earthquake damages infrastructure across a county. The Emergency Operations Center activates TPT Emergency with Fire, Ambulance, Police, Disaster Response, HazMat, and Mutual Aid modules enabled. Each agency sees its own interface but shares a common incident map. Fire marks a collapsed building. Ambulance sees it and dispatches a medic unit. Police cordons the area. All actions appear on a shared timeline. The EOC director has visibility into every agency's status without switching systems.
-        </p>
-
-        <h3>Single-Agency Focus: Rural EMS</h3>
-        <p>
-          A rural ambulance service with 4 vehicles deploys TPT Emergency on tablets mounted in each rig. Only Ambulance Service, Call Center Console, and Patient Transport Tracking are enabled. The interface is clean and focused. Dispatchers see only ambulance-relevant incidents. Drivers get transport ETAs and hospital status. There's no police or fire clutter. If the service later mutual aids with a neighboring county, the Mutual Aid module can be enabled in seconds.
-        </p>
-
-        <h3>Specialized Operation: Urban Search & Rescue</h3>
-        <p>
-          A USAR team deploys to a building collapse. They enable Fire Department, Medical Command, Personnel Accountability, Search & Rescue Patterns, and Bluetooth Beacon Monitoring. Each rescuer wears a BLE beacon. The incident commander sees real-time positions on the map, manages PAR checks automatically, and assigns search grids. When the operation concludes, the team disables USAR-specific modules and returns to standard fire operations.
-        </p>
-
-        <h2>Conclusion</h2>
-        <p>
-          Monolithic emergency software forces agencies to adapt to the software. TPT Emergency's modular architecture lets the software adapt to the agency. Enable what you need. Disable what you don't. Add custom modules for your unique workflows. All while sharing a common operational picture that keeps every responder aligned.
-        </p>
-
-        <div class="flex flex-wrap gap-4 mt-8">
-          <a href="https://github.com/TPT-Open-Source/tpt-emergency" target="_blank" class="px-6 py-3 bg-brand hover:bg-brand-light rounded-xl font-semibold text-white transition">
-            Explore on GitHub
-          </a>
-          <a href="pillar-offline-first.html" class="px-6 py-3 bg-dark-700 hover:bg-dark-600 rounded-xl font-semibold text-white transition border border-dark-700">
-            ← Previous: Offline-First
-          </a>
+      <div class="module-grid">
+        <div class="module-card">
+          <div class="module-card-header"><span>🔥</span><h4>Fire Department</h4></div>
+          <p>Incident command structure, apparatus tracking, water supply logging, pre-plans, and ICS role assignment.</p>
         </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>🚑</span><h4>Ambulance Service</h4></div>
+          <p>Patient transport tracking, hospital diversion status, ETA calculation, and crew scheduling.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>🚔</span><h4>Police Department</h4></div>
+          <p>Unit tracking, call sign assignment, evidence logging, radio channel management, and BOLO alerts.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>🌪️</span><h4>Disaster Response</h4></div>
+          <p>Multi-agency coordination, evacuation zone mapping, shelter management, and resource mutual aid.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>☢️</span><h4>HazMat Response</h4></div>
+          <p>Plume modelling, containment logging, decon tracking, and chemical database lookup.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>🩺</span><h4>Medical Command / MCI</h4></div>
+          <p>Mass casualty incident management, triage tag tracking, treatment area assignment, and patient flow.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>🤝</span><h4>Mutual Aid Coordinator</h4></div>
+          <p>Cross-jurisdiction resource requests, automatic MOU compliance, and incoming unit integration.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>👥</span><h4>Personnel Accountability</h4></div>
+          <p>PAR checks, beacon-based mustering, entry/exit logging, and roll call automation.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>🌤️</span><h4>Weather Integration</h4></div>
+          <p>Real-time weather feeds, lightning detection, flood zone overlays, and wind direction for HazMat.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>📻</span><h4>Radio Channel Management</h4></div>
+          <p>Channel assignment, transmission logging, interoperability bridge tracking, and talkgroup management.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>📜</span><h4>Audit Log System</h4></div>
+          <p>Tamper-evident event history, search &amp; filter, export for legal discovery, and chain of custody.</p>
+        </div>
+        <div class="module-card">
+          <div class="module-card-header"><span>📞</span><h4>Call Centre Console</h4></div>
+          <p>Full call-taking interface, caller location, script guidance, and automatic incident generation.</p>
+        </div>
+      </div>
+
+      <h2>Integration Ecosystem</h2>
+      <p>
+        Beyond the core agency modules, TPT Emergency includes cross-cutting integration modules that connect to external
+        systems and sensors:
+      </p>
+      <ul>
+        <li><strong>Bluetooth Beacon Monitoring</strong> — Personnel and equipment tracking via BLE beacons with real-time ranging</li>
+        <li><strong>Geofence Alerting</strong> — Automatic alerts when units enter or leave defined zones</li>
+        <li><strong>Traffic-Aware Routing</strong> — ETA calculations that factor in real-time traffic conditions</li>
+        <li><strong>Search &amp; Rescue Patterns</strong> — Predefined search patterns (grid, line, spiral) with coverage tracking</li>
+        <li><strong>Route Calculation</strong> — Turn-by-turn routing with hazmat and vehicle-type restrictions</li>
+        <li><strong>Resource Maintenance Logging</strong> — Equipment inspection schedules, failure tracking, and readiness status</li>
+        <li><strong>Unit Shift Scheduling</strong> — Crew roster management with overtime tracking and qualification checking</li>
+      </ul>
+
+      <h2>Deployment Flexibility</h2>
+      <p>
+        The modular design directly enables flexible deployment. A rural volunteer fire department can run TPT Emergency
+        on a single laptop with only the Fire and Personnel Accountability modules enabled. A metropolitan EMS system can
+        deploy a full server cluster with Ambulance, Medical Command, Call Centre, and Weather modules active.
+      </p>
+      <p>
+        Because modules load dynamically at runtime, disabled modules carry zero performance penalty. The application
+        bundle only includes what you enable — tree-shaking removes unused modules from the static HTML build automatically.
+      </p>
+
+      <h2>Building a Custom Module</h2>
+      <p>
+        TPT Emergency's module system is designed for extension. A custom module is a SolidJS component that exports a
+        standard interface. The <code>ModuleLoader</code> dynamically imports and renders modules based on the enabled
+        configuration from the admin API.
+      </p>
+      <p>To build a new module you create:</p>
+      <ul>
+        <li>A <code>.jsx</code> component file in <code>src/modules/</code></li>
+        <li>A module registration entry that defines the module ID, name, icon, and required permissions</li>
+        <li>Optionally, a context provider if the module needs to share state with other components</li>
+      </ul>
+      <p>
+        The module automatically gains access to the common dispatch layer, user roles, audit logging, and real-time sync
+        without any additional wiring. A new module can be operational in hours, not months.
+      </p>
+
+      <div class="arch-stack">
+        <div class="arch-stack-title">Module Architecture Stack</div>
+        <div class="arch-row">
+          <div class="arch-label" style="color:var(--accent)">Modules</div>
+          <div class="arch-desc">Fire, Ambulance, Police, Disaster, HazMat, Medical, Mutual Aid, etc.</div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label" style="color:#2563eb">Providers</div>
+          <div class="arch-desc">Dispatch, User, Audit, Resource, Triage, Beacon contexts</div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label" style="color:#16a34a">Common Layer</div>
+          <div class="arch-desc">Incidents, roles, permissions, sync, offline storage</div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label" style="color:#7c3aed">Runtime</div>
+          <div class="arch-desc">SolidJS, Tailwind, MapLibre, Socket.IO client</div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label" style="color:var(--faint)">Platform</div>
+          <div class="arch-desc">Browser, PWA, Fastify, SQLite, IndexedDB</div>
+        </div>
+      </div>
+
+      <h2>Real-World Use Cases</h2>
+
+      <h3>Multi-Agency Disaster: Earthquake Response</h3>
+      <p>
+        A magnitude 7.2 earthquake damages infrastructure across a county. The Emergency Operations Centre activates
+        TPT Emergency with Fire, Ambulance, Police, Disaster Response, HazMat, and Mutual Aid modules enabled. Each
+        agency sees its own interface but shares a common incident map. Fire marks a collapsed building. Ambulance
+        dispatches a medic unit. Police cordons the area. All actions appear on a shared timeline.
+      </p>
+
+      <h3>Single-Agency Focus: Rural EMS</h3>
+      <p>
+        A rural ambulance service with 4 vehicles deploys TPT Emergency on tablets mounted in each rig. Only Ambulance
+        Service, Call Centre Console, and Patient Transport Tracking are enabled. The interface is clean and focused.
+        If the service later mutual aids with a neighbouring region, the Mutual Aid module can be enabled in seconds.
+      </p>
+
+      <h3>Specialised Operation: Urban Search &amp; Rescue</h3>
+      <p>
+        A USAR team deploys to a building collapse. They enable Fire Department, Medical Command, Personnel Accountability,
+        Search &amp; Rescue Patterns, and Bluetooth Beacon Monitoring. Each rescuer wears a BLE beacon. The incident
+        commander sees real-time positions on the map, manages PAR checks automatically, and assigns search grids.
+        When the operation concludes, USAR-specific modules are disabled and the team returns to standard operations.
+      </p>
+
+      <h2>Conclusion</h2>
+      <p>
+        Monolithic emergency software forces agencies to adapt to the software. TPT Emergency's modular architecture
+        lets the software adapt to the agency. Enable what you need. Disable what you don't. Add custom modules for your
+        unique workflows — all while sharing a common operational picture that keeps every responder aligned.
+      </p>
+
+      <div class="cta-row">
+        <a href="https://github.com/PhillipC05/tpt-emergency" target="_blank" rel="noopener noreferrer" class="btn-primary">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          Explore on GitHub
+        </a>
+        <a href="pillar-offline-first.html" class="btn-secondary">
+          &larr; Previous: Offline-First
+        </a>
+      </div>
+
     </div>
-  </section>
+  </main>
 
   <!-- Footer -->
-  <footer class="border-t border-dark-700/50 py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-bold">E</div>
-          <span class="font-bold">TPT Emergency</span>
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-logo">
+          <div class="nav-logo-mark">E</div>
+          TPT Emergency
         </div>
-        <div class="flex items-center gap-6 text-sm text-gray-400">
-          <a href="landing.html" class="hover:text-white transition">Home</a>
-          <a href="pillar-offline-first.html" class="hover:text-white transition">Offline-First</a>
-          <a href="pillar-modular-dispatch.html" class="text-white">Modular Dispatch</a>
-          <a href="https://github.com/TPT-Open-Source/tpt-emergency" target="_blank" class="hover:text-white transition">GitHub</a>
-        </div>
-      <div class="text-center text-sm text-gray-500 mt-8">
-        © TPT Emergency Services. Open source under MIT License.
+        <ul class="footer-links">
+          <li><a href="landing.html">Home</a></li>
+          <li><a href="pillar-offline-first.html">Offline-First</a></li>
+          <li><a href="pillar-modular-dispatch.html" class="active">Modular Dispatch</a></li>
+          <li><a href="https://github.com/PhillipC05/tpt-emergency" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+        </ul>
       </div>
+      <p class="footer-copy">&copy; TPT Emergency Services. Open source under MIT License.</p>
+    </div>
   </footer>
 
   <script>
-    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-      document.getElementById('mobile-menu').classList.toggle('hidden');
+    document.getElementById('mobile-toggle').addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.toggle('open');
     });
   </script>
 </body>

@@ -10,6 +10,7 @@ import { NetworkHealth } from './components/NetworkHealth'
 import { GlobalUndo } from './components/GlobalUndo'
 import { VehicleMode } from './components/VehicleMode'
 import { DataManagement } from './components/DataManagement'
+import { AssetManager } from './components/AssetManager'
 import { initNightMode, toggleNightMode, isNightMode } from './lib/night-mode'
 import { OfflineDB } from './lib/offline-db'
 import { DispatchProvider } from './modules/CommonDispatchLayer'
@@ -315,6 +316,14 @@ export default function App() {
              {sidebarOpen() && <span>Communications</span>}
            </button>
 
+           <button
+             onClick={() => setActiveModule('assets')}
+             class={`w-full flex items-center gap-3 p-3 rounded-lg transition ${activeModule() === 'assets' ? 'bg-gray-700' : 'hover:bg-gray-700/50'}`}
+           >
+             <span>🛸</span>
+             {sidebarOpen() && <span>Asset Manager</span>}
+           </button>
+
           <div class="my-3 border-t border-gray-700"></div>
 
           <For each={modules().filter(m => m.enabled)}>
@@ -449,7 +458,8 @@ export default function App() {
 
            {activeModule() === 'map' && <Map />}
            {activeModule() === 'bluetooth' && <BluetoothManager />}
-           {!['dashboard', 'map', 'bluetooth'].includes(activeModule()) && (
+           {activeModule() === 'assets' && <AssetManager />}
+           {!['dashboard', 'map', 'bluetooth', 'assets'].includes(activeModule()) && (
              <ModuleLoader moduleId={activeModule()} />
            )}
         </div>
